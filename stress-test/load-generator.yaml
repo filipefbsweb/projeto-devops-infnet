@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  labels:
+    app: load-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+    spec:
+      containers:
+      - name: load-generator
+        image: busybox
+        command: ["/bin/sh", "-c"]
+        args:
+        - >
+          while true; do
+            # Simula carga de CPU
+            for i in $(seq 1 10); do
+              timeout -s SIGINT 5 bash -c "while true; do echo; done" || true;
+              sleep 2;
+            done;
+            
+            # Simula requisições ao serviço de cadastro
+            for i in $(seq 1 30); do
+              wget -q -O- http://cadastro:3001/ || true;
+              sleep 0.2;
+            done;
+          done
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"

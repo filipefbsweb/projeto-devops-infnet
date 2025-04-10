@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stress-test
+  labels:
+    app: stress-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stress-test
+  template:
+    metadata:
+      labels:
+        app: stress-test
+    spec:
+      containers:
+      - name: stress-ng
+        image: polinux/stress-ng
+        command: ["/bin/sh", "-c"]
+        args:
+        - >
+          while true; do
+            # Carga de CPU - 80% por 30 segundos
+            stress-ng --cpu 1 --cpu-load 80 --timeout 30s;
+            sleep 10;
+            
+            # Carga de memória - consumir gradualmente até 100MB
+            stress-ng --vm 1 --vm-bytes 100M --timeout 20s;
+            sleep 10;
+            
+            # Simulação de requisições à aplicação
+            for i in $(seq 1 20); do
+              wget -q -O- http://cadastro:3001/ || true;
+              sleep 0.5;
+            done;
+          done
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
