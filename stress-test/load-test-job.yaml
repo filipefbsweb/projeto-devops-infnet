@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-load-test
+spec:
+  template:
+    spec:
+      containers:
+      - name: k6
+        image: loadimpact/k6
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          cat <<EOF > /tmp/script.js
+          import http from 'k6/http';
+          import { sleep } from 'k6';
+
+          export const options = {
+            vus: 10,
+            duration: '5m',
+            thresholds: {
+              http_req_duration: ['p(95)<500'],
+            },
+          };
+
+          export default function () {
+            http.get('http://cadastro:3001/');
+            sleep(1);
+          }
+          EOF
+          k6 run /tmp/script.js
+      restartPolicy: Never
+  backoffLimit: 1
